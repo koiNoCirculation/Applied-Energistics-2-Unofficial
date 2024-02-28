@@ -989,16 +989,16 @@ public abstract class AEBaseContainer extends Container {
     }
 
     public void swapSlotContents(final int slotA, final int slotB) {
-        //I don't know why there's slot number larger than slot size is here :(
+        // I don't know why there's slot number larger than slot size is here :(
         final Slot a;
-        if(slotA < this.inventorySlots.size()) {
+        if (slotA < this.inventorySlots.size()) {
             a = this.getSlot(slotA);
         } else {
             return;
         }
 
         final Slot b;
-        if(slotB < this.inventorySlots.size()) {
+        if (slotB < this.inventorySlots.size()) {
             b = this.getSlot(slotB);
         } else {
             return;
