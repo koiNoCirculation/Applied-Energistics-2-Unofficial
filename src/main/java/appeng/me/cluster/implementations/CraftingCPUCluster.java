@@ -454,9 +454,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             AELog.crafting(LOG_MARK_AS_COMPLETE, logStack);
         }
 
-        onCompleteListeners.forEach(f ->
-            f.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime)
-        );
+        onCompleteListeners.forEach(f -> f.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime));
         this.usedStorage = 0;
         this.remainingItemCount = 0;
         this.startItemCount = 0;
@@ -1316,8 +1314,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             if (onCompleteListenerTag != null) {
                 int i = 1;
                 byte[] r;
-                while((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
-                    onCompleteListeners.add((TriFunction<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r)).readObject());
+                while ((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
+                    onCompleteListeners.add(
+                            (TriFunction<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r))
+                                    .readObject());
                     i++;
                 }
             }
