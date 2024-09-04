@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -140,6 +141,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
+    private TriFunction<ItemStack, Long, Long, Void> onCompleteListener;
+
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
     public CraftingCPUCluster(final WorldCoord min, final WorldCoord max) {
@@ -158,6 +161,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     public ICraftingLink getLastCraftingLink() {
         return this.myLastLink;
+    }
+
+    public void setOnCompleteListener(TriFunction<ItemStack, Long, Long, Void> onCompleteListener) {
+        this.onCompleteListener = onCompleteListener;
     }
 
     /**
@@ -415,6 +422,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             final IAEItemStack logStack = this.finalOutput.copy();
             logStack.setStackSize(this.startItemCount);
             AELog.crafting(LOG_MARK_AS_COMPLETE, logStack);
+        }
+
+        if(onCompleteListener != null) {
+            onCompleteListener.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime);
         }
 
         if (!this.playersFollowingCurrentCraft.isEmpty()) {
