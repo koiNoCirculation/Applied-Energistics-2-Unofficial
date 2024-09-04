@@ -1314,8 +1314,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 byte[] r;
                 while ((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
                     onCompleteListeners.add(
-                            (OnCompleteListener<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r))
-                                    .readObject());
+                            (OnCompleteListener<ItemStack, Long, Long>) new ObjectInputStream(
+                                    new ByteArrayInputStream(r)).readObject());
                     i++;
                 }
             }
