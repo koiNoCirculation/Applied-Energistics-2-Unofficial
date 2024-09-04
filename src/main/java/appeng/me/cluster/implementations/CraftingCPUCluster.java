@@ -10,8 +10,14 @@
 
 package appeng.me.cluster.implementations;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -139,7 +144,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
-    private TriFunction<ItemStack, Long, Long, Void> onCompleteListener;
+    private List<TriFunction<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
 
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
@@ -161,8 +166,33 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.myLastLink;
     }
 
-    public void setOnCompleteListener(TriFunction<ItemStack, Long, Long, Void> onCompleteListener) {
-        this.onCompleteListener = onCompleteListener;
+    private List<TriFunction<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
+        return Arrays.asList((finalOutput, numsOfOutput, elapsedTime) -> {
+            if (!this.playersFollowingCurrentCraft.isEmpty()) {
+                final String elapsedTimeText = DurationFormatUtils.formatDuration(
+                        TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS),
+                        GuiText.ETAFormat.getLocal());
+
+                final IChatComponent messageWaitToSend = PlayerMessages.FinishCraftingRemind.get(
+                        new ChatComponentText(EnumChatFormatting.GREEN + String.valueOf(numsOfOutput)),
+                        finalOutput.func_151000_E(),
+                        new ChatComponentText(EnumChatFormatting.GREEN + elapsedTimeText));
+
+                for (String playerName : this.playersFollowingCurrentCraft) {
+                    // Get each EntityPlayer
+                    EntityPlayer player = getPlayerByName(playerName);
+                    if (player != null) {
+                        // Send message to player
+                        player.addChatMessage(messageWaitToSend);
+                        player.worldObj.playSoundAtEntity(player, "random.levelup", 1f, 1f);
+                    }
+                }
+            }
+        });
+    }
+
+    public void addOnCompleteListener(TriFunction<ItemStack, Long, Long> onCompleteListener) {
+        this.onCompleteListeners.add(onCompleteListener);
     }
 
     /**
@@ -422,31 +452,9 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             AELog.crafting(LOG_MARK_AS_COMPLETE, logStack);
         }
 
-        if(onCompleteListener != null) {
-            onCompleteListener.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime);
-        }
-
-        if (!this.playersFollowingCurrentCraft.isEmpty()) {
-
-            final String elapsedTimeText = DurationFormatUtils.formatDuration(
-                    TimeUnit.MILLISECONDS.convert(this.getElapsedTime(), TimeUnit.NANOSECONDS),
-                    GuiText.ETAFormat.getLocal());
-
-            IChatComponent messageWaitToSend = PlayerMessages.FinishCraftingRemind.get(
-                    new ChatComponentText(EnumChatFormatting.GREEN + String.valueOf(this.numsOfOutput)),
-                    this.finalOutput.getItemStack().func_151000_E(),
-                    new ChatComponentText(EnumChatFormatting.GREEN + elapsedTimeText));
-
-            for (String playerName : this.playersFollowingCurrentCraft) {
-                // Get each EntityPlayer
-                EntityPlayer pl = this.getWorld().getPlayerEntityByName(playerName);
-                if (pl != null) {
-                    // Send message to player
-                    pl.addChatMessage(messageWaitToSend);
-                }
-            }
-        }
-
+        onCompleteListeners.forEach(f ->
+            f.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime)
+        );
         this.usedStorage = 0;
         this.remainingItemCount = 0;
         this.startItemCount = 0;
@@ -455,6 +463,11 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.numsOfOutput = 0;
         this.isComplete = true;
         this.playersFollowingCurrentCraft.clear();
+        this.onCompleteListeners = initializeDefaultOnCompleteListener();
+    }
+
+    private EntityPlayerMP getPlayerByName(String playerName) {
+        return MinecraftServer.getServer().getConfigurationManager().func_152612_a(playerName);
     }
 
     private void updateCPU() {
@@ -572,7 +585,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
         this.finalOutput = null;
         this.updateCPU();
-
+        this.onCompleteListeners = initializeDefaultOnCompleteListener();
         this.storeItems(); // marks dirty
     }
 
@@ -1149,6 +1162,20 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         data.setBoolean("isComplete", this.isComplete);
         data.setLong("usedStorage", this.usedStorage);
         data.setLong("numsOfOutput", this.numsOfOutput);
+        try {
+            NBTTagCompound tagOnCompleteListeners = new NBTTagCompound();
+            for (int i = 1; i < onCompleteListeners.size(); i++) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ObjectOutputStream saveOnCompleteListener = new ObjectOutputStream(out);
+                saveOnCompleteListener.writeObject(onCompleteListeners.get(i));
+                tagOnCompleteListeners.setByteArray(String.valueOf(i), out.toByteArray());
+
+            }
+            data.setTag("onCompleteListeners", tagOnCompleteListeners);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         if (!this.playersFollowingCurrentCraft.isEmpty()) {
             NBTTagList nbtTagList = new NBTTagList();
@@ -1281,6 +1308,19 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             this.providers.put(
                     AEItemStack.loadItemStackFromNBT(pro.getCompoundTag("item")),
                     DimensionalCoord.readAsListFromNBT(pro));
+        }
+        try {
+            NBTTagCompound onCompleteListenerTag = data.getCompoundTag("onCompleteListeners");
+            if (onCompleteListenerTag != null) {
+                int i = 1;
+                byte[] r;
+                while((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
+                    onCompleteListeners.add((TriFunction<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r)).readObject());
+                    i++;
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
