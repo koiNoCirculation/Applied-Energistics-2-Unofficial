@@ -144,7 +144,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
-    private List<TriFunction<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
+    private List<OnCompleteListener<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
 
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
@@ -166,7 +166,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.myLastLink;
     }
 
-    private List<TriFunction<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
+    private List<OnCompleteListener<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
         return Arrays.asList((finalOutput, numsOfOutput, elapsedTime) -> {
             if (!this.playersFollowingCurrentCraft.isEmpty()) {
                 final String elapsedTimeText = DurationFormatUtils.formatDuration(
@@ -191,7 +191,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         });
     }
 
-    public void addOnCompleteListener(TriFunction<ItemStack, Long, Long> onCompleteListener) {
+    public void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener) {
         this.onCompleteListeners.add(onCompleteListener);
     }
 
@@ -1314,7 +1314,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 byte[] r;
                 while ((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
                     onCompleteListeners.add(
-                            (TriFunction<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r))
+                            (OnCompleteListener<ItemStack, Long, Long>) new ObjectInputStream(new ByteArrayInputStream(r))
                                     .readObject());
                     i++;
                 }

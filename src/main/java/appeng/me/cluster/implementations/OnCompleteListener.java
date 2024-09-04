@@ -3,7 +3,7 @@ package appeng.me.cluster.implementations;
 import java.io.Serializable;
 
 @FunctionalInterface
-public interface TriFunction<A1, A2, A3> extends Serializable {
+public interface OnCompleteListener<A1, A2, A3> extends Serializable {
 
     /**
      * Applies this function to the given arguments.
