@@ -13,17 +13,15 @@
 
 package appeng.api.networking.crafting;
 
-import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
-import appeng.api.util.CraftCancelListener;
-import appeng.api.util.CraftingStatusListener;
 import net.minecraft.item.ItemStack;
 
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.util.CraftCancelListener;
+import appeng.api.util.CraftingStatusListener;
 import appeng.api.util.OnCompleteListener;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {

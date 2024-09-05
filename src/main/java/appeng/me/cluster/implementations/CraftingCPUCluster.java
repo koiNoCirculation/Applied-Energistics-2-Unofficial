@@ -32,9 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import appeng.api.util.CraftCancelListener;
-import appeng.api.util.CraftingStatusListener;
-import appeng.api.util.OnCompleteListener;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryCrafting;
@@ -87,8 +84,11 @@ import appeng.api.storage.IMEMonitorHandlerReceiver;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
+import appeng.api.util.CraftCancelListener;
+import appeng.api.util.CraftingStatusListener;
 import appeng.api.util.DimensionalCoord;
 import appeng.api.util.IInterfaceViewable;
+import appeng.api.util.OnCompleteListener;
 import appeng.api.util.WorldCoord;
 import appeng.container.ContainerNull;
 import appeng.core.AELog;
@@ -1205,6 +1205,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         }
         return tagListeners;
     }
+
     public void writeToNBT(final NBTTagCompound data) {
         data.setTag("finalOutput", this.writeItem(this.finalOutput));
         data.setTag("inventory", this.writeList(this.inventory.getItemList()));
@@ -1217,7 +1218,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             data.setTag("onCancelListeners", persistListeners(0, onCancelListeners));
             data.setTag("craftStatusListeners", persistListeners(0, craftingStatusListeners));
         } catch (IOException e) {
-            //should not affect normal persistence even if there's mistake here.
+            // should not affect normal persistence even if there's mistake here.
             e.printStackTrace();
         }
 
@@ -1293,14 +1294,13 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.updateName();
     }
 
-    private void unpersistListeners(int from, List toAdd, NBTTagCompound tagCompound) throws IOException, ClassNotFoundException {
+    private void unpersistListeners(int from, List toAdd, NBTTagCompound tagCompound)
+            throws IOException, ClassNotFoundException {
         if (tagCompound != null) {
             int i = from;
             byte[] r;
             while ((r = tagCompound.getByteArray(String.valueOf(i))).length != 0) {
-                toAdd.add(
-                       new ObjectInputStream(
-                                new ByteArrayInputStream(r)).readObject());
+                toAdd.add(new ObjectInputStream(new ByteArrayInputStream(r)).readObject());
                 i++;
             }
         }
@@ -1371,7 +1371,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             unpersistListeners(0, onCancelListeners, data.getCompoundTag("onCancelListeners"));
             unpersistListeners(0, craftingStatusListeners, data.getCompoundTag("craftStatusListeners"));
         } catch (IOException | ClassNotFoundException e) {
-            //should not affect normal persistence even if there's mistake here.
+            // should not affect normal persistence even if there's mistake here.
             e.printStackTrace();
         }
     }
