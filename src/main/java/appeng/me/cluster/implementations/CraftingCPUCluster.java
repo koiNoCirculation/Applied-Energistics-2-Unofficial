@@ -352,7 +352,6 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         } else if (type == Actionable.MODULATE) {
             if (is != null && is.getStackSize() > 0) {
                 this.waiting = false;
-
                 this.postChange(what, src);
 
                 if (is.getStackSize() >= what.getStackSize()) {
@@ -361,7 +360,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     this.updateElapsedTime(what);
                     this.markDirty();
                     this.postCraftingStatusChange(is);
-
+                    for (CraftingStatusListener<Integer> craftingStatusListener : craftingStatusListeners) {
+                        //whatever it passes is not important, if it's not 0, it indicates the craft is active rather than stuck.
+                        craftingStatusListener.accept(1);
+                    }
                     if (Objects.equals(finalOutput, what)) {
                         IAEStack leftover = what;
 
