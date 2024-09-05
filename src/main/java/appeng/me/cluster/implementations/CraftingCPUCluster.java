@@ -1297,7 +1297,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.updateName();
     }
 
-    private void unpersistListeners(int from, List toAdd, NBTTagCompound tagCompound)
+    private void unpersistListeners(int from, List<?> toAdd, NBTTagCompound tagCompound)
             throws IOException, ClassNotFoundException {
         if (tagCompound != null) {
             int i = from;
