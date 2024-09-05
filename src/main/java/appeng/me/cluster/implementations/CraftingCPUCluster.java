@@ -172,6 +172,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     private List<OnCompleteListener<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
 
+    private List<Runnable> onCancelListeners = new ArrayList<>();
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
     public CraftingCPUCluster(final WorldCoord min, final WorldCoord max) {
@@ -198,6 +199,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     public void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener) {
         this.onCompleteListeners.add(onCompleteListener);
+    }
+
+    public void addCancelListener(Runnable onCancelListener) {
+        this.onCancelListeners.add(onCancelListener);
     }
 
     /**
@@ -589,7 +594,11 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.finalOutput = null;
         this.updateCPU();
         this.onCompleteListeners = initializeDefaultOnCompleteListener();
-        this.storeItems(); // marks dirty
+        this.storeItems(); // marks dirtyi
+        for (Runnable onCancelListener : this.onCancelListeners) {
+            onCancelListener.run();
+        }
+        this.onCancelListeners.clear();
     }
 
     public void updateCraftingLogic(final IGrid grid, final IEnergyGrid eg, final CraftingGridCache cc) {
@@ -1165,20 +1174,6 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         data.setBoolean("isComplete", this.isComplete);
         data.setLong("usedStorage", this.usedStorage);
         data.setLong("numsOfOutput", this.numsOfOutput);
-        try {
-            NBTTagCompound tagOnCompleteListeners = new NBTTagCompound();
-            for (int i = 1; i < onCompleteListeners.size(); i++) {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ObjectOutputStream saveOnCompleteListener = new ObjectOutputStream(out);
-                saveOnCompleteListener.writeObject(onCompleteListeners.get(i));
-                tagOnCompleteListeners.setByteArray(String.valueOf(i), out.toByteArray());
-
-            }
-            data.setTag("onCompleteListeners", tagOnCompleteListeners);
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
         if (!this.playersFollowingCurrentCraft.isEmpty()) {
             NBTTagList nbtTagList = new NBTTagList();
@@ -1311,21 +1306,6 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             this.providers.put(
                     AEItemStack.loadItemStackFromNBT(pro.getCompoundTag("item")),
                     DimensionalCoord.readAsListFromNBT(pro));
-        }
-        try {
-            NBTTagCompound onCompleteListenerTag = data.getCompoundTag("onCompleteListeners");
-            if (onCompleteListenerTag != null) {
-                int i = 1;
-                byte[] r;
-                while ((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
-                    onCompleteListeners.add(
-                            (OnCompleteListener<ItemStack, Long, Long>) new ObjectInputStream(
-                                    new ByteArrayInputStream(r)).readObject());
-                    i++;
-                }
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 

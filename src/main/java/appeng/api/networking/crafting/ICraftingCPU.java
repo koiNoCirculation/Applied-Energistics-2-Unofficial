@@ -18,6 +18,8 @@ import javax.annotation.Nullable;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.me.cluster.implementations.OnCompleteListener;
+import net.minecraft.item.ItemStack;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
 
@@ -74,4 +76,14 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
     default long getStartItemCount() {
         return 0;
     }
+
+    /**
+     * @param onCompleteListener a callback that is called when task is complete
+     */
+    void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener);
+
+    /**
+     * @param onCancelListener a callback that is called when task is canceled
+     */
+    void addCancelListener(Runnable onCancelListener);
 }
