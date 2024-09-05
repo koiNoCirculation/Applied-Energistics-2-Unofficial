@@ -1,8 +1,8 @@
 package appeng.api.util;
 
-import net.minecraft.item.ItemStack;
-
 import java.io.Serializable;
+
+import net.minecraft.item.ItemStack;
 
 @FunctionalInterface
 public interface CraftCompleteListener extends Serializable {
@@ -12,9 +12,9 @@ public interface CraftCompleteListener extends Serializable {
     /**
      * Applies this function to the given arguments.
      *
-     * @param finalOutput the output of job
+     * @param finalOutput  the output of job
      * @param numsOfOutput the size of output stack
-     * @param elapsedTime the
+     * @param elapsedTime  the
      * @return the function result
      */
     void apply(ItemStack finalOutput, Long numsOfOutput, Long elapsedTime);

@@ -150,29 +150,28 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
-    private List<CraftCompleteListener> defaultOnComplete = Arrays
-            .asList((finalOutput, numsOfOutput, elapsedTime) -> {
-                if (!this.playersFollowingCurrentCraft.isEmpty()) {
-                    final String elapsedTimeText = DurationFormatUtils.formatDuration(
-                            TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS),
-                            GuiText.ETAFormat.getLocal());
+    private List<CraftCompleteListener> defaultOnComplete = Arrays.asList((finalOutput, numsOfOutput, elapsedTime) -> {
+        if (!this.playersFollowingCurrentCraft.isEmpty()) {
+            final String elapsedTimeText = DurationFormatUtils.formatDuration(
+                    TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS),
+                    GuiText.ETAFormat.getLocal());
 
-                    final IChatComponent messageWaitToSend = PlayerMessages.FinishCraftingRemind.get(
-                            new ChatComponentText(EnumChatFormatting.GREEN + String.valueOf(numsOfOutput)),
-                            finalOutput.func_151000_E(),
-                            new ChatComponentText(EnumChatFormatting.GREEN + elapsedTimeText));
+            final IChatComponent messageWaitToSend = PlayerMessages.FinishCraftingRemind.get(
+                    new ChatComponentText(EnumChatFormatting.GREEN + String.valueOf(numsOfOutput)),
+                    finalOutput.func_151000_E(),
+                    new ChatComponentText(EnumChatFormatting.GREEN + elapsedTimeText));
 
-                    for (String playerName : this.playersFollowingCurrentCraft) {
-                        // Get each EntityPlayer
-                        EntityPlayer player = getPlayerByName(playerName);
-                        if (player != null) {
-                            // Send message to player
-                            player.addChatMessage(messageWaitToSend);
-                            player.worldObj.playSoundAtEntity(player, "random.levelup", 1f, 1f);
-                        }
-                    }
+            for (String playerName : this.playersFollowingCurrentCraft) {
+                // Get each EntityPlayer
+                EntityPlayer player = getPlayerByName(playerName);
+                if (player != null) {
+                    // Send message to player
+                    player.addChatMessage(messageWaitToSend);
+                    player.worldObj.playSoundAtEntity(player, "random.levelup", 1f, 1f);
                 }
-            });
+            }
+        }
+    });
 
     private List<CraftCompleteListener> craftCompleteListeners = initializeDefaultOnCompleteListener();
 
