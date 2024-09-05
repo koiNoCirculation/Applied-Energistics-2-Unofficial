@@ -871,15 +871,18 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     public ICraftingLink submitJob(final IGrid g, final ICraftingJob job, final BaseActionSource src,
             final ICraftingRequester requestingMachine) {
-        onCancelListeners.clear();
-        craftingStatusListeners.clear();
-        onCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
-                                                                     // when it comes to a new craft,
         if (this.myLastLink != null && this.isBusy()
                 && this.finalOutput.isSameType(job.getOutput())
                 && this.availableStorage >= this.usedStorage + job.getByteTotal()) {
             return mergeJob(g, job, src);
         }
+        for (Runnable onCancelListener : onCancelListeners) {
+            onCancelListener.run();
+        }
+        onCancelListeners.clear();
+        craftingStatusListeners.clear();
+        onCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
+        // when it comes to a new craft,
 
         if (!this.tasks.isEmpty() || !this.waitingFor.isEmpty()) {
             return null;
