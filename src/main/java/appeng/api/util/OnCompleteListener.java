@@ -1,10 +1,10 @@
-package appeng.me.cluster.implementations;
+package appeng.api.util;
 
 import java.io.Serializable;
 
 @FunctionalInterface
 public interface OnCompleteListener<A1, A2, A3> extends Serializable {
-
+    long serialVersionUID = 734594276097234589L;
     /**
      * Applies this function to the given arguments.
      *

@@ -17,12 +17,14 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import appeng.api.util.CraftCancelListener;
+import appeng.api.util.CraftingStatusListener;
 import net.minecraft.item.ItemStack;
 
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
-import appeng.me.cluster.implementations.OnCompleteListener;
+import appeng.api.util.OnCompleteListener;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
 
@@ -88,12 +90,12 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
     /**
      * @param onCancelListener a callback that is called when task is canceled
      */
-    void addCancelListener(Runnable onCancelListener);
+    void addCancelListener(CraftCancelListener onCancelListener);
 
     /**
      * called when craft executes, passing number of tasks executed to Listener
      * 
      * @param onCraftingStatusUpdate
      */
-    void addCraftingStatusListener(Consumer<Integer> onCraftingStatusUpdate);
+    void addCraftingStatusListener(CraftingStatusListener<Integer> onCraftingStatusUpdate);
 }

@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import appeng.api.util.CraftCancelListener;
+import appeng.api.util.CraftingStatusListener;
+import appeng.api.util.OnCompleteListener;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryCrafting;
@@ -173,9 +176,9 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     private List<OnCompleteListener<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
 
-    private List<Consumer<Integer>> craftingStatusListeners = new ArrayList<>();
+    private List<CraftingStatusListener<Integer>> craftingStatusListeners = new ArrayList<>();
 
-    private List<Runnable> onCancelListeners = new ArrayList<>();
+    private List<CraftCancelListener> onCancelListeners = new ArrayList<>();
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
     public CraftingCPUCluster(final WorldCoord min, final WorldCoord max) {
@@ -206,12 +209,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     }
 
     @Override
-    public void addCancelListener(Runnable onCancelListener) {
+    public void addCancelListener(CraftCancelListener onCancelListener) {
         this.onCancelListeners.add(onCancelListener);
     }
 
     @Override
-    public void addCraftingStatusListener(Consumer<Integer> onCraftingStatusUpdate) {
+    public void addCraftingStatusListener(CraftingStatusListener<Integer> onCraftingStatusUpdate) {
         this.craftingStatusListeners.add(onCraftingStatusUpdate);
     }
 
@@ -1192,6 +1195,16 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return is;
     }
 
+    private NBTTagCompound persistListeners(int from, List listeners) throws IOException {
+        NBTTagCompound tagListeners = new NBTTagCompound();
+        for (int i = from; i < listeners.size(); i++) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream saveListener = new ObjectOutputStream(out);
+            saveListener.writeObject(listeners.get(i));
+            tagListeners.setByteArray(String.valueOf(i), out.toByteArray());
+        }
+        return tagListeners;
+    }
     public void writeToNBT(final NBTTagCompound data) {
         data.setTag("finalOutput", this.writeItem(this.finalOutput));
         data.setTag("inventory", this.writeList(this.inventory.getItemList()));
@@ -1200,18 +1213,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         data.setLong("usedStorage", this.usedStorage);
         data.setLong("numsOfOutput", this.numsOfOutput);
         try {
-            NBTTagCompound tagOnCompleteListeners = new NBTTagCompound();
-            for (int i = 1; i < onCompleteListeners.size(); i++) {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ObjectOutputStream saveOnCompleteListener = new ObjectOutputStream(out);
-                saveOnCompleteListener.writeObject(onCompleteListeners.get(i));
-                tagOnCompleteListeners.setByteArray(String.valueOf(i), out.toByteArray());
-
-            }
-            data.setTag("onCompleteListeners", tagOnCompleteListeners);
-
+            data.setTag("onCompleteListeners", persistListeners(1, onCompleteListeners));
+            data.setTag("onCancelListeners", persistListeners(0, onCancelListeners));
+            data.setTag("craftStatusListeners", persistListeners(0, craftingStatusListeners));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            //should not affect normal persistence even if there's mistake here.
+            e.printStackTrace();
         }
 
         if (!this.playersFollowingCurrentCraft.isEmpty()) {
@@ -1286,6 +1293,19 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.updateName();
     }
 
+    private void unpersistListeners(int from, List toAdd, NBTTagCompound tagCompound) throws IOException, ClassNotFoundException {
+        if (tagCompound != null) {
+            int i = from;
+            byte[] r;
+            while ((r = tagCompound.getByteArray(String.valueOf(i))).length != 0) {
+                toAdd.add(
+                       new ObjectInputStream(
+                                new ByteArrayInputStream(r)).readObject());
+                i++;
+            }
+        }
+    }
+
     public void readFromNBT(final NBTTagCompound data) {
         this.finalOutput = AEItemStack.loadItemStackFromNBT((NBTTagCompound) data.getTag("finalOutput"));
         for (final IAEItemStack ais : this.readList((NBTTagList) data.getTag("inventory"))) {
@@ -1347,19 +1367,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     DimensionalCoord.readAsListFromNBT(pro));
         }
         try {
-            NBTTagCompound onCompleteListenerTag = data.getCompoundTag("onCompleteListeners");
-            if (onCompleteListenerTag != null) {
-                int i = 1;
-                byte[] r;
-                while ((r = onCompleteListenerTag.getByteArray(String.valueOf(i))).length != 0) {
-                    onCompleteListeners.add(
-                            (OnCompleteListener<ItemStack, Long, Long>) new ObjectInputStream(
-                                    new ByteArrayInputStream(r)).readObject());
-                    i++;
-                }
-            }
+            unpersistListeners(1, onCompleteListeners, data.getCompoundTag("onCompleteListeners"));
+            unpersistListeners(0, onCancelListeners, data.getCompoundTag("onCancelListeners"));
+            unpersistListeners(0, craftingStatusListeners, data.getCompoundTag("craftStatusListeners"));
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            //should not affect normal persistence even if there's mistake here.
+            e.printStackTrace();
         }
     }
 
