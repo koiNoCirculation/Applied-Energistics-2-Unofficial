@@ -485,6 +485,9 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.isComplete = true;
         this.playersFollowingCurrentCraft.clear();
         this.craftCompleteListeners = initializeDefaultOnCompleteListener();
+        this.onCancelListeners.clear(); // complete listener will clean external state
+                                        // so cancel listener is not called here.
+        this.craftingStatusListeners.clear();
     }
 
     private EntityPlayerMP getPlayerByName(String playerName) {
