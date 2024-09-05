@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -172,6 +174,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     private List<OnCompleteListener<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
 
+    private List<Consumer<Integer>> craftingStatusListeners = new ArrayList<>();
+
     private List<Runnable> onCancelListeners = new ArrayList<>();
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
 
@@ -197,12 +201,19 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return new ArrayList<>(defaultOnComplete);
     }
 
+    @Override
     public void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener) {
         this.onCompleteListeners.add(onCompleteListener);
     }
 
+    @Override
     public void addCancelListener(Runnable onCancelListener) {
         this.onCancelListeners.add(onCancelListener);
+    }
+
+    @Override
+    public void addCraftingStatusListener(Consumer<Integer> onCraftingStatusUpdate) {
+        this.craftingStatusListeners.add(onCraftingStatusUpdate);
     }
 
     /**
@@ -594,6 +605,11 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.finalOutput = null;
         this.updateCPU();
         this.onCompleteListeners = initializeDefaultOnCompleteListener();
+        for (Runnable onCancelListener : this.onCancelListeners) {
+            onCancelListener.run();
+        }
+        this.onCancelListeners.clear();
+        this.craftingStatusListeners.clear();
         this.storeItems(); // marks dirty
     }
 
@@ -651,6 +667,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private void executeCrafting(final IEnergyGrid eg, final CraftingGridCache cc) {
         final Iterator<Entry<ICraftingPatternDetails, TaskProgress>> i = this.workableTasks.entrySet().iterator();
 
+        int executedTasks = 0;
         while (i.hasNext()) {
             final Entry<ICraftingPatternDetails, TaskProgress> e = i.next();
 
@@ -668,7 +685,6 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
             InventoryCrafting ic = null;
             boolean pushedPattern = false;
-
             for (final ICraftingMedium m : cc.getMediums(e.getKey())) {
                 if (e.getValue().value <= 0 || knownBusyMediums.contains(m)) {
                     continue;
@@ -803,6 +819,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             if (!pushedPattern) {
                 // No need to revisit this task on next executeCrafting this tick
                 i.remove();
+            } else {
+                executedTasks += 1;
             }
 
             if (ic != null) {
@@ -814,6 +832,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     }
                 }
             }
+        }
+        for (Consumer<Integer> craftingStatusListener : craftingStatusListeners) {
+            //if executed tasks is 0 for too much long time, we may need to send an alert in callback registered by addon mods, like an email.
+            craftingStatusListener.accept(executedTasks);
         }
     }
 
@@ -850,6 +872,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     public ICraftingLink submitJob(final IGrid g, final ICraftingJob job, final BaseActionSource src,
             final ICraftingRequester requestingMachine) {
         onCancelListeners.clear();
+        craftingStatusListeners.clear();
         onCompleteListeners = initializeDefaultOnCompleteListener(); //clear all possible listeners
                                                                      //when it comes to a new craft,
         if (this.myLastLink != null && this.isBusy()
