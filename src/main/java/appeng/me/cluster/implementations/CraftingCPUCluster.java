@@ -150,7 +150,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
-    private List<CraftCompleteListener<ItemStack, Long, Long>> defaultOnComplete = Arrays
+    private List<CraftCompleteListener> defaultOnComplete = Arrays
             .asList((finalOutput, numsOfOutput, elapsedTime) -> {
                 if (!this.playersFollowingCurrentCraft.isEmpty()) {
                     final String elapsedTimeText = DurationFormatUtils.formatDuration(
@@ -174,9 +174,9 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 }
             });
 
-    private List<CraftCompleteListener<ItemStack, Long, Long>> craftCompleteListeners = initializeDefaultOnCompleteListener();
+    private List<CraftCompleteListener> craftCompleteListeners = initializeDefaultOnCompleteListener();
 
-    private List<CraftingStatusListener<Integer>> craftingStatusListeners = new ArrayList<>();
+    private List<CraftingStatusListener> craftingStatusListeners = new ArrayList<>();
 
     private List<CraftCancelListener> onCancelListeners = new ArrayList<>();
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
@@ -199,12 +199,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.myLastLink;
     }
 
-    private List<CraftCompleteListener<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
+    private List<CraftCompleteListener> initializeDefaultOnCompleteListener() {
         return new ArrayList<>(defaultOnComplete);
     }
 
     @Override
-    public void addOnCompleteListener(CraftCompleteListener<ItemStack, Long, Long> craftCompleteListener) {
+    public void addOnCompleteListener(CraftCompleteListener craftCompleteListener) {
         this.craftCompleteListeners.add(craftCompleteListener);
     }
 
@@ -214,7 +214,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     }
 
     @Override
-    public void addCraftingStatusListener(CraftingStatusListener<Integer> onCraftingStatusUpdate) {
+    public void addCraftingStatusListener(CraftingStatusListener onCraftingStatusUpdate) {
         this.craftingStatusListeners.add(onCraftingStatusUpdate);
     }
 
@@ -360,7 +360,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     this.updateElapsedTime(what);
                     this.markDirty();
                     this.postCraftingStatusChange(is);
-                    for (CraftingStatusListener<Integer> craftingStatusListener : craftingStatusListeners) {
+                    for (CraftingStatusListener craftingStatusListener : craftingStatusListeners) {
                         // whatever it passes is not important, if it's not 0, it indicates the craft is active rather
                         // than stuck.
                         craftingStatusListener.accept(1);

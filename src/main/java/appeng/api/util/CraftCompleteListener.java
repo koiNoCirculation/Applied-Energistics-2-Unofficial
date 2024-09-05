@@ -1,19 +1,21 @@
 package appeng.api.util;
 
+import net.minecraft.item.ItemStack;
+
 import java.io.Serializable;
 
 @FunctionalInterface
-public interface CraftCompleteListener<A1, A2, A3> extends Serializable {
+public interface CraftCompleteListener extends Serializable {
 
     long serialVersionUID = 734594276097234589L;
 
     /**
      * Applies this function to the given arguments.
      *
-     * @param a1 the first function argument
-     * @param a2 the second function argument
-     * @param a3 the third function argument
+     * @param finalOutput the output of job
+     * @param numsOfOutput the size of output stack
+     * @param elapsedTime the
      * @return the function result
      */
-    void apply(A1 a1, A2 a2, A3 a3);
+    void apply(ItemStack finalOutput, Long numsOfOutput, Long elapsedTime);
 }

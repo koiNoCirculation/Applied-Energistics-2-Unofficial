@@ -83,7 +83,7 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
     /**
      * @param craftCompleteListener a callback that is called when task is complete
      */
-    void addOnCompleteListener(CraftCompleteListener<ItemStack, Long, Long> craftCompleteListener);
+    void addOnCompleteListener(CraftCompleteListener craftCompleteListener);
 
     /**
      * @param onCancelListener a callback that is called when task is canceled
@@ -95,5 +95,5 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
      * 
      * @param onCraftingStatusUpdate
      */
-    void addCraftingStatusListener(CraftingStatusListener<Integer> onCraftingStatusUpdate);
+    void addCraftingStatusListener(CraftingStatusListener onCraftingStatusUpdate);
 }
