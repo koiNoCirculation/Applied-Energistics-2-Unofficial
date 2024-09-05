@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -834,7 +833,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             }
         }
         for (Consumer<Integer> craftingStatusListener : craftingStatusListeners) {
-            //if executed tasks is 0 for too much long time, we may need to send an alert in callback registered by addon mods, like an email.
+            // if executed tasks is 0 for too much long time, we may need to send an alert in callback registered by
+            // addon mods, like an email.
             craftingStatusListener.accept(executedTasks);
         }
     }
@@ -873,8 +873,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             final ICraftingRequester requestingMachine) {
         onCancelListeners.clear();
         craftingStatusListeners.clear();
-        onCompleteListeners = initializeDefaultOnCompleteListener(); //clear all possible listeners
-                                                                     //when it comes to a new craft,
+        onCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
+                                                                     // when it comes to a new craft,
         if (this.myLastLink != null && this.isBusy()
                 && this.finalOutput.isSameType(job.getOutput())
                 && this.availableStorage >= this.usedStorage + job.getByteTotal()) {
