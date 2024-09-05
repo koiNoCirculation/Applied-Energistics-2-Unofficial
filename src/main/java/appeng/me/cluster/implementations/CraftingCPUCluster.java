@@ -1198,7 +1198,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return is;
     }
 
-    private NBTTagCompound persistListeners(int from, List listeners) throws IOException {
+    private NBTTagCompound persistListeners(int from, List<?> listeners) throws IOException {
         NBTTagCompound tagListeners = new NBTTagCompound();
         for (int i = from; i < listeners.size(); i++) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
