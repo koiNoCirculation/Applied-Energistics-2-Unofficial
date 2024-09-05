@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import appeng.api.util.CraftCompleteListener;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryCrafting;
@@ -86,6 +85,7 @@ import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
 import appeng.api.util.CraftCancelListener;
+import appeng.api.util.CraftCompleteListener;
 import appeng.api.util.CraftingStatusListener;
 import appeng.api.util.DimensionalCoord;
 import appeng.api.util.IInterfaceViewable;
@@ -879,7 +879,6 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 && this.availableStorage >= this.usedStorage + job.getByteTotal()) {
             return mergeJob(g, job, src);
         }
-
 
         if (!this.tasks.isEmpty() || !this.waitingFor.isEmpty()) {
             return null;
