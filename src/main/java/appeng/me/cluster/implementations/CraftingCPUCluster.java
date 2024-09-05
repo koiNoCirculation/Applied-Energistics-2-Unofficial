@@ -361,7 +361,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     this.markDirty();
                     this.postCraftingStatusChange(is);
                     for (CraftingStatusListener<Integer> craftingStatusListener : craftingStatusListeners) {
-                        //whatever it passes is not important, if it's not 0, it indicates the craft is active rather than stuck.
+                        // whatever it passes is not important, if it's not 0, it indicates the craft is active rather
+                        // than stuck.
                         craftingStatusListener.accept(1);
                     }
                     if (Objects.equals(finalOutput, what)) {
@@ -1299,13 +1300,13 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.updateName();
     }
 
-    private void unpersistListeners(int from, List<?> toAdd, NBTTagCompound tagCompound)
+    private <T> void unpersistListeners(int from, List<T> toAdd, NBTTagCompound tagCompound)
             throws IOException, ClassNotFoundException {
         if (tagCompound != null) {
             int i = from;
             byte[] r;
             while ((r = tagCompound.getByteArray(String.valueOf(i))).length != 0) {
-                toAdd.add(new ObjectInputStream(new ByteArrayInputStream(r)).readObject());
+                toAdd.add((T)new ObjectInputStream(new ByteArrayInputStream(r)).readObject());
                 i++;
             }
         }
