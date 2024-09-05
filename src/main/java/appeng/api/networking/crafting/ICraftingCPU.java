@@ -15,11 +15,12 @@ package appeng.api.networking.crafting;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.item.ItemStack;
+
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.me.cluster.implementations.OnCompleteListener;
-import net.minecraft.item.ItemStack;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
 
