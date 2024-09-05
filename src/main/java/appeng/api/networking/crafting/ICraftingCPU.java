@@ -22,7 +22,7 @@ import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.CraftCancelListener;
 import appeng.api.util.CraftingStatusListener;
-import appeng.api.util.OnCompleteListener;
+import appeng.api.util.CraftCompleteListener;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
 
@@ -81,9 +81,9 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
     }
 
     /**
-     * @param onCompleteListener a callback that is called when task is complete
+     * @param craftCompleteListener a callback that is called when task is complete
      */
-    void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener);
+    void addOnCompleteListener(CraftCompleteListener<ItemStack, Long, Long> craftCompleteListener);
 
     /**
      * @param onCancelListener a callback that is called when task is canceled

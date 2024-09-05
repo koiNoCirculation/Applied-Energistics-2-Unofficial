@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import appeng.api.util.CraftCompleteListener;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryCrafting;
@@ -88,7 +89,6 @@ import appeng.api.util.CraftCancelListener;
 import appeng.api.util.CraftingStatusListener;
 import appeng.api.util.DimensionalCoord;
 import appeng.api.util.IInterfaceViewable;
-import appeng.api.util.OnCompleteListener;
 import appeng.api.util.WorldCoord;
 import appeng.container.ContainerNull;
 import appeng.core.AELog;
@@ -150,7 +150,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     private long remainingItemCount;
     private long numsOfOutput;
 
-    private List<OnCompleteListener<ItemStack, Long, Long>> defaultOnComplete = Arrays
+    private List<CraftCompleteListener<ItemStack, Long, Long>> defaultOnComplete = Arrays
             .asList((finalOutput, numsOfOutput, elapsedTime) -> {
                 if (!this.playersFollowingCurrentCraft.isEmpty()) {
                     final String elapsedTimeText = DurationFormatUtils.formatDuration(
@@ -174,7 +174,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 }
             });
 
-    private List<OnCompleteListener<ItemStack, Long, Long>> onCompleteListeners = initializeDefaultOnCompleteListener();
+    private List<CraftCompleteListener<ItemStack, Long, Long>> craftCompleteListeners = initializeDefaultOnCompleteListener();
 
     private List<CraftingStatusListener<Integer>> craftingStatusListeners = new ArrayList<>();
 
@@ -199,13 +199,13 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.myLastLink;
     }
 
-    private List<OnCompleteListener<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
+    private List<CraftCompleteListener<ItemStack, Long, Long>> initializeDefaultOnCompleteListener() {
         return new ArrayList<>(defaultOnComplete);
     }
 
     @Override
-    public void addOnCompleteListener(OnCompleteListener<ItemStack, Long, Long> onCompleteListener) {
-        this.onCompleteListeners.add(onCompleteListener);
+    public void addOnCompleteListener(CraftCompleteListener<ItemStack, Long, Long> craftCompleteListener) {
+        this.craftCompleteListeners.add(craftCompleteListener);
     }
 
     @Override
@@ -475,7 +475,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             AELog.crafting(LOG_MARK_AS_COMPLETE, logStack);
         }
 
-        onCompleteListeners.forEach(f -> f.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime));
+        craftCompleteListeners.forEach(f -> f.apply(this.finalOutput.getItemStack(), this.numsOfOutput, elapsedTime));
         this.usedStorage = 0;
         this.remainingItemCount = 0;
         this.startItemCount = 0;
@@ -484,7 +484,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.numsOfOutput = 0;
         this.isComplete = true;
         this.playersFollowingCurrentCraft.clear();
-        this.onCompleteListeners = initializeDefaultOnCompleteListener();
+        this.craftCompleteListeners = initializeDefaultOnCompleteListener();
     }
 
     private EntityPlayerMP getPlayerByName(String playerName) {
@@ -606,7 +606,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
         this.finalOutput = null;
         this.updateCPU();
-        this.onCompleteListeners = initializeDefaultOnCompleteListener();
+        this.craftCompleteListeners = initializeDefaultOnCompleteListener();
         for (Runnable onCancelListener : this.onCancelListeners) {
             onCancelListener.run();
         }
@@ -879,13 +879,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 && this.availableStorage >= this.usedStorage + job.getByteTotal()) {
             return mergeJob(g, job, src);
         }
-        for (Runnable onCancelListener : onCancelListeners) {
-            onCancelListener.run();
-        }
-        onCancelListeners.clear();
-        craftingStatusListeners.clear();
-        onCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
-        // when it comes to a new craft,
+
 
         if (!this.tasks.isEmpty() || !this.waitingFor.isEmpty()) {
             return null;
@@ -911,6 +905,13 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             this.playersFollowingCurrentCraft.clear();
 
             if (ci.commit(src)) {
+                for (Runnable onCancelListener : onCancelListeners) {
+                    onCancelListener.run();
+                }
+                onCancelListeners.clear();
+                craftingStatusListeners.clear();
+                craftCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
+                // when it comes to a new craft,
                 if (job.getOutput() != null) {
                     this.finalOutput = job.getOutput();
                     this.waiting = false;
@@ -1214,7 +1215,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         data.setLong("usedStorage", this.usedStorage);
         data.setLong("numsOfOutput", this.numsOfOutput);
         try {
-            data.setTag("onCompleteListeners", persistListeners(1, onCompleteListeners));
+            data.setTag("craftCompleteListeners", persistListeners(1, craftCompleteListeners));
             data.setTag("onCancelListeners", persistListeners(0, onCancelListeners));
             data.setTag("craftStatusListeners", persistListeners(0, craftingStatusListeners));
         } catch (IOException e) {
@@ -1367,7 +1368,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     DimensionalCoord.readAsListFromNBT(pro));
         }
         try {
-            unpersistListeners(1, onCompleteListeners, data.getCompoundTag("onCompleteListeners"));
+            unpersistListeners(1, craftCompleteListeners, data.getCompoundTag("craftCompleteListeners"));
             unpersistListeners(0, onCancelListeners, data.getCompoundTag("onCancelListeners"));
             unpersistListeners(0, craftingStatusListeners, data.getCompoundTag("craftStatusListeners"));
         } catch (IOException | ClassNotFoundException e) {
