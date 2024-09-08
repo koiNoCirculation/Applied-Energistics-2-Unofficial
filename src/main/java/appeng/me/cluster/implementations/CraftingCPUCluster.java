@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -86,7 +86,7 @@ import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
 import appeng.api.util.CraftCancelListener;
 import appeng.api.util.CraftCompleteListener;
-import appeng.api.util.CraftingStatusListener;
+import appeng.api.util.CraftUpdateListener;
 import appeng.api.util.DimensionalCoord;
 import appeng.api.util.IInterfaceViewable;
 import appeng.api.util.WorldCoord;
@@ -175,7 +175,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
 
     private List<CraftCompleteListener> craftCompleteListeners = initializeDefaultOnCompleteListener();
 
-    private List<CraftingStatusListener> craftingStatusListeners = new ArrayList<>();
+    private List<CraftUpdateListener> craftUpdateListeners = new ArrayList<>();
 
     private List<CraftCancelListener> onCancelListeners = new ArrayList<>();
     private List<String> playersFollowingCurrentCraft = new ArrayList<>();
@@ -208,13 +208,13 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
     }
 
     @Override
-    public void addCancelListener(CraftCancelListener onCancelListener) {
+    public void addOnCancelListener(CraftCancelListener onCancelListener) {
         this.onCancelListeners.add(onCancelListener);
     }
 
     @Override
-    public void addCraftingStatusListener(CraftingStatusListener onCraftingStatusUpdate) {
-        this.craftingStatusListeners.add(onCraftingStatusUpdate);
+    public void addOnCraftingUpdateListener(CraftUpdateListener onCraftingStatusUpdate) {
+        this.craftUpdateListeners.add(onCraftingStatusUpdate);
     }
 
     /**
@@ -359,10 +359,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                     this.updateElapsedTime(what);
                     this.markDirty();
                     this.postCraftingStatusChange(is);
-                    for (CraftingStatusListener craftingStatusListener : craftingStatusListeners) {
+                    for (CraftUpdateListener craftUpdateListener : craftUpdateListeners) {
                         // whatever it passes is not important, if it's not 0, it indicates the craft is active rather
                         // than stuck.
-                        craftingStatusListener.accept(1);
+                        craftUpdateListener.accept(1);
                     }
                     if (Objects.equals(finalOutput, what)) {
                         IAEStack leftover = what;
@@ -489,7 +489,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.craftCompleteListeners = initializeDefaultOnCompleteListener();
         this.onCancelListeners.clear(); // complete listener will clean external state
                                         // so cancel listener is not called here.
-        this.craftingStatusListeners.clear();
+        this.craftUpdateListeners.clear();
     }
 
     private EntityPlayerMP getPlayerByName(String playerName) {
@@ -616,7 +616,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             onCancelListener.run();
         }
         this.onCancelListeners.clear();
-        this.craftingStatusListeners.clear();
+        this.craftUpdateListeners.clear();
         this.storeItems(); // marks dirty
     }
 
@@ -840,7 +840,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
                 }
             }
         }
-        for (Consumer<Integer> craftingStatusListener : craftingStatusListeners) {
+        for (IntConsumer craftingStatusListener : craftUpdateListeners) {
             // if executed tasks is 0 for too much long time, we may need to send an alert in callback registered by
             // addon mods, like an email.
             craftingStatusListener.accept(executedTasks);
@@ -909,11 +909,8 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
             this.playersFollowingCurrentCraft.clear();
 
             if (ci.commit(src)) {
-                for (Runnable onCancelListener : onCancelListeners) {
-                    onCancelListener.run();
-                }
                 onCancelListeners.clear();
-                craftingStatusListeners.clear();
+                craftUpdateListeners.clear();
                 craftCompleteListeners = initializeDefaultOnCompleteListener(); // clear all possible listeners
                 // when it comes to a new craft,
                 if (job.getOutput() != null) {
@@ -1221,7 +1218,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         try {
             data.setTag("craftCompleteListeners", persistListeners(1, craftCompleteListeners));
             data.setTag("onCancelListeners", persistListeners(0, onCancelListeners));
-            data.setTag("craftStatusListeners", persistListeners(0, craftingStatusListeners));
+            data.setTag("craftStatusListeners", persistListeners(0, craftUpdateListeners));
         } catch (IOException e) {
             // should not affect normal persistence even if there's mistake here.
             e.printStackTrace();
@@ -1374,7 +1371,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         try {
             unpersistListeners(1, craftCompleteListeners, data.getCompoundTag("craftCompleteListeners"));
             unpersistListeners(0, onCancelListeners, data.getCompoundTag("onCancelListeners"));
-            unpersistListeners(0, craftingStatusListeners, data.getCompoundTag("craftStatusListeners"));
+            unpersistListeners(0, craftUpdateListeners, data.getCompoundTag("craftStatusListeners"));
         } catch (IOException | ClassNotFoundException e) {
             // should not affect normal persistence even if there's mistake here.
             e.printStackTrace();

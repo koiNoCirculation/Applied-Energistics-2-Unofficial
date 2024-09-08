@@ -17,5 +17,5 @@ public interface CraftCompleteListener extends Serializable {
      * @param elapsedTime  the
      * @return the function result
      */
-    void apply(ItemStack finalOutput, Long numsOfOutput, Long elapsedTime);
+    void apply(ItemStack finalOutput, long numsOfOutput, long elapsedTime);
 }
